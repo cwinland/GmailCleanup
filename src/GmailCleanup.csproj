@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="EnhancedEnum-StrongNamed" Version="1.21.1.2310" />
+    <PackageReference Include="Google.Apis.Auth" Version="1.49.0" />
+    <PackageReference Include="Google.Apis.Auth.AspNetCore" Version="1.49.0" />
+    <PackageReference Include="Google.Apis.Gmail.v1" Version="1.49.0.2202" />
+  </ItemGroup>
+
+</Project>
