@@ -14,7 +14,7 @@ namespace GmailCleanup
 {
     public class Email
     {
-        private const string EMAIL_ID = "me";
+        private string EmailId { get; }
         private const string SEPARATOR = ", ";
 
         public string AdvancedQuery { get; set; } = "smaller:1M older_than:3m (in:forums OR in:promotions)";
@@ -25,21 +25,26 @@ namespace GmailCleanup
         public List<KeyValuePair<SearchStringOperators, string>> SearchStrings { get; set; } =
             new List<KeyValuePair<SearchStringOperators, string>>();
 
-        protected UserCredential Credential { get; } = GCreds.Authorize();
+        protected UserCredential Credential { get; }
 
         protected GmailService Service { get; }
 
-        public string EmailAddress => Service.Users.GetProfile("me").Execute().EmailAddress;
+        public string EmailAddress => Service.Users.GetProfile(EmailId).Execute().EmailAddress;
 
-        public Email() => Service = GCreds.Connect(Credential);
+        public Email(string emailId, UserCredential credential = null, GmailService service = null)
+        {
+            EmailId = emailId;
+            Credential = credential ?? GCreds.Authorize();
+            Service = service ?? GCreds.Connect(Credential);
+        }
 
-        public List<Label> GetLabels() => Service.Users.Labels.List(EMAIL_ID).Execute().Labels.ToList();
+        public List<Label> GetLabels() => Service.Users.Labels.List(EmailId).Execute().Labels.ToList();
 
         public List<string> GetIdList(int page = 1, int pageSize = 100)
         {
             var currentPage = 1;
             var idList = new List<string>();
-            var mailListRequest = Service.Users.Messages.List(EMAIL_ID);
+            var mailListRequest = Service.Users.Messages.List(EmailId);
             mailListRequest.Q = string.IsNullOrEmpty(AdvancedQuery)
                 ? GetQuery()
                 : AdvancedQuery;
@@ -76,7 +81,7 @@ namespace GmailCleanup
         {
             var currentPage = 1;
             var emailInfoList = new List<EmailInfo>();
-            var mailListRequest = Service.Users.Messages.List(EMAIL_ID);
+            var mailListRequest = Service.Users.Messages.List(EmailId);
             mailListRequest.Q = string.IsNullOrEmpty(AdvancedQuery)
                 ? GetQuery()
                 : AdvancedQuery;
@@ -112,7 +117,7 @@ namespace GmailCleanup
 
                     var values = email.LabelIds?.ToList() ?? new List<string>();
                     var labels = email.LabelIds == null ? string.Empty : string.Join(SEPARATOR, values);
-                    var emailInfoRequest = Service.Users.Messages.Get(EMAIL_ID, email.Id);
+                    var emailInfoRequest = Service.Users.Messages.Get(EmailId, email.Id);
                     var emailInfoResponse = emailInfoRequest.Execute();
 
                     var from = string.Empty;
@@ -172,7 +177,7 @@ namespace GmailCleanup
             foreach (var id in idList)
             {
                 maxThread.Wait();
-                Task.Factory.StartNew(() => { Service.Users.Messages.Trash(EMAIL_ID, id).Execute(); },
+                Task.Factory.StartNew(() => { Service.Users.Messages.Trash(EmailId, id).Execute(); },
                                       TaskCreationOptions.LongRunning)
                     .ContinueWith(task => maxThread.Release());
             }
@@ -214,7 +219,7 @@ namespace GmailCleanup
         public Label CreateGmailLabel(string labelName)
         {
             Label result = null;
-            var labels = Service.Users.Labels.List(EMAIL_ID).Execute().Labels.ToList();
+            var labels = Service.Users.Labels.List(EmailId).Execute().Labels.ToList();
             labels.ForEach(label =>
                            {
                                if (label.Name == labelName)
@@ -234,13 +239,13 @@ namespace GmailCleanup
                                                    LabelListVisibility = "labelShow",
                                                    MessageListVisibility = "show",
                                                },
-                                               EMAIL_ID)
+                                               EmailId)
                           .Execute();
         }
 
-        public string DeleteLabel(string id) => Service.Users.Labels.Delete(EMAIL_ID, id).Execute();
+        public string DeleteLabel(string id) => Service.Users.Labels.Delete(EmailId, id).Execute();
 
-        public Message InsertMessage(Message message) => Service.Users.Messages.Insert(message, EMAIL_ID).Execute();
+        public Message InsertMessage(Message message) => Service.Users.Messages.Insert(message, EmailId).Execute();
 
         public static Message CreateMessageObject(string to, string from, string subject, string bodyText)
         {
